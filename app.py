@@ -40,17 +40,21 @@ def read_image_file(request):
 
 
 def determine_dominate_color(image):
-    print(type(image), image.shape, image.dtype)
-
-
+    c = image.shape[-1]
+    ravel = image.reshape(-1, c)
+    median = tuple(np.median(ravel, axis=0).astype(np.uint8))
+    # hist, edges = np.histogramdd(ravel, bins=256, range=[(0,255) for _ in range(c)])
+    # print(hist.shape, edges.shape)
+    value = median
+    value_str = ','.join(str(x) for x in value)
+    return f'<p style="color:rgb({value_str});">{value}</p>'
 
 @app.route("/api/determine_dominate_color", methods=['POST'])
 def determine_dominate_color_api():
     image = read_image_file(request)
     if image is None:
         return "File is empty / Bad image"
-    determine_dominate_color(image)
-    return "determined"
+    return str(determine_dominate_color(image))
 
 
 @app.route("/test/form/upload_image", methods=['GET'])
