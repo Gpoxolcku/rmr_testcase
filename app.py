@@ -1,10 +1,11 @@
-import os
 from flask import Flask, request, redirect, render_template, url_for
 from flask.helpers import flash
+import numpy as np
 from werkzeug.utils import secure_filename
+import cv2
 
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024
-UPLOAD_FOLDER = ".tmp_images"
+UPLOAD_FOLDER = "tmp_images"
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 
@@ -33,19 +34,22 @@ def read_image_file(request):
         print("Bad input file")
         return None
     # image_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-    return image_file
+    image = np.frombuffer(image_file.read(), np.uint8)
+    image_decoded = cv2.imdecode(image, -1)
+    return image_decoded
 
 
-def determine_dominate_color(image_file):
-    print("Good", image_file.filename)
+def determine_dominate_color(image):
+    print(type(image), image.shape, image.dtype)
+
 
 
 @app.route("/api/determine_dominate_color", methods=['POST'])
 def determine_dominate_color_api():
-    image_file = read_image_file(request)
-    if image_file is None:
-        return "File is empty"
-    determine_dominate_color(image_file)
+    image = read_image_file(request)
+    if image is None:
+        return "File is empty / Bad image"
+    determine_dominate_color(image)
     return "determined"
 
 
