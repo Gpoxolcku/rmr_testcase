@@ -3,6 +3,7 @@ from flask.helpers import flash
 import numpy as np
 from werkzeug.utils import secure_filename
 import cv2
+from scipy import stats
 
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024
 UPLOAD_FOLDER = "tmp_images"
@@ -39,15 +40,41 @@ def read_image_file(request):
     return image_decoded
 
 
+def calculate_mode(image):
+    if len(image.shape) == 2:  # grayscale
+        vals, counts = np.unique(image, return_counts=True)
+        v = vals[np.argmax(counts)]
+        return v
+
+    num_channels = image.shape[-1]
+    channels = np.split(image.astype(np.uint8), num_channels, axis=-1)
+    merged_colors = np.zeros_like(channels[0], dtype=np.uint32)
+    for ch in channels:  # rgba
+        merged_colors = merged_colors << 8
+        merged_colors += ch
+    vals, counts = np.unique(merged_colors, return_counts=True)
+    v = vals[np.argmax(counts)]
+    result = []
+    for _ in range(num_channels):
+        c = v & 0xFF
+        v = v >> 8
+        result.append(c)
+    return np.array(result)[::-1]
+
+
 def determine_dominate_color(image):
-    c = image.shape[-1]
-    ravel = image.reshape(-1, c)
-    median = tuple(np.median(ravel, axis=0).astype(np.uint8))
-    # hist, edges = np.histogramdd(ravel, bins=256, range=[(0,255) for _ in range(c)])
-    # print(hist.shape, edges.shape)
-    value = median
-    value_str = ','.join(str(x) for x in value)
-    return f'<p style="color:rgb({value_str});">{value}</p>'
+
+    mode = calculate_mode(image)
+    value = mode
+    # if isinstance(value, np.uint8):
+    #     value_str = f"({value},{value},{value})"
+    # else:
+    #     value_str = ','.join(str(x) for x in value[:3])  # [:3] so the transparent result is visible
+    # return f'<p style="color:rgb({value_str});">{value}</p>'
+    # return f'<p style="background-color:rgb({value_str});">{value}</p>'
+    # return f'<p>{value}</p>'
+    return value
+
 
 @app.route("/api/determine_dominate_color", methods=['POST'])
 def determine_dominate_color_api():
