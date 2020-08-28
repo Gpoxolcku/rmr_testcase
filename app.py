@@ -8,8 +8,7 @@ def app_root():
     
 @app.route("/index")
 def index():
-    # return render_template("index")
-    return "Index page"
+    return render_template("index.html")
 
 if __name__ == "__main__":
     app.run()
