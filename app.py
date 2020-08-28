@@ -30,7 +30,7 @@ def is_file_allowed(filename):
 
 def read_image_file(request):
     image_file = request.files.get('file', None)
-    filename = secure_filename(image_file.filename)
+    filename = secure_filename(getattr(image_file, "filename", ""))
     if not(image_file and is_file_allowed(filename)):
         print("Bad input file")
         return None
@@ -110,11 +110,11 @@ def calculate_mode(image):
 def determine_dominate_color(image):
     mode = calculate_mode(image)
     value = mode
-    if isinstance(value, np.uint8):
-        value_str = f"({value},{value},{value})"
-    else:
-        value_str = ','.join(str(x) for x in value[:3])  # [:3] so the transparent result is visible
-    return f'<p style="background-color:rgb({value_str});">{value}</p>'
+    # if isinstance(value, np.uint8):
+    #     value_str = f"({value},{value},{value})"
+    # else:
+    #     value_str = ','.join(str(x) for x in value[:3])  # [:3] so the transparent result is visible
+    # return f'<p style="background-color:rgb({value_str});">{value}</p>'
     return value
 
 
