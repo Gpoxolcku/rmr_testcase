@@ -1,9 +1,7 @@
-from flask import Flask, request, redirect, render_template, url_for
-from flask.helpers import flash
+from flask import Flask, request, redirect, render_template
 import numpy as np
 from werkzeug.utils import secure_filename
 import cv2
-from scipy import stats
 
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024
 UPLOAD_FOLDER = "tmp_images"
@@ -41,6 +39,7 @@ def read_image_file(request):
     return image_decoded
 
 
+# debug
 def _calculate_mode(image):
     if len(image.shape) == 2:  # grayscale
         vals, counts = np.unique(image, return_counts=True)
@@ -69,7 +68,7 @@ def _calculate_mode(image):
         results.append(result[::-1])
     return np.array(results)
 
-
+# debug
 def _determine_dominate_color(image):
     mode = calculate_mode(image)
     res = ""
