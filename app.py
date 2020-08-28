@@ -37,6 +37,7 @@ def read_image_file(request):
     # image_file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
     image = np.frombuffer(image_file.read(), np.uint8)
     image_decoded = cv2.imdecode(image, -1)
+    image_decoded = cv2.cvtColor(image_decoded, cv2.COLOR_BGR2RGB)
     return image_decoded
 
 
@@ -49,55 +50,25 @@ def _calculate_mode(image):
     num_channels = image.shape[-1]
     channels = np.split(image.astype(np.uint8), num_channels, axis=-1)
     merged_colors = np.zeros_like(channels[0], dtype=np.uint32)
-    for ch in channels:  # rgba
+    for ch in channels:  # rgb
         merged_colors = merged_colors << 8
         merged_colors += ch
-    vals, counts = np.unique(merged_colors, return_counts=True)
-    asort = np.argsort(counts)[-10:][::-1]
-    vals_sorted = vals[asort]
 
-    # v = vals[np.argmax(counts)]
+    vals, counts = np.unique(merged_colors, return_counts=True)
+    asort = np.argsort(counts)
+    # print(counts[asort][::-1][:10])
+    vals_sorted = vals[asort][::-1][:10]
+
     results = []
     for v in vals_sorted:
         result = []
-        for _ in range(num_channels):
+        for _ in range(num_channels):  # bgr
             c = v & 0xFF
             v = v >> 8
             result.append(c)
-        results.append(result)
+        results.append(result[::-1])
     return np.array(results)
 
-
-def calculate_mode(image):
-    if len(image.shape) == 2:  # grayscale
-        vals, counts = np.unique(image, return_counts=True)
-        v = vals[np.argmax(counts)]
-        return v
-
-    num_channels = image.shape[-1]
-    channels = np.split(image.astype(np.uint8), num_channels, axis=-1)
-    merged_colors = np.zeros_like(channels[0], dtype=np.uint32)
-    for ch in channels:  # rgba
-        merged_colors = merged_colors << 8
-        merged_colors += ch
-    vals, counts = np.unique(merged_colors, return_counts=True)
-    v = vals[np.argmax(counts)]
-    result = []
-    for _ in range(num_channels):
-        c = v & 0xFF
-        v = v >> 8
-        result.append(c)
-    return np.array(result)
-
-def determine_dominate_color(image):
-    mode = calculate_mode(image)
-    value = mode
-    if isinstance(value, np.uint8):
-        value_str = f"({value},{value},{value})"
-    else:
-        value_str = ','.join(str(x) for x in value[:3])  # [:3] so the transparent result is visible
-    return f'<p style="background-color:rgb({value_str});">{value}</p>'
-    return value
 
 def _determine_dominate_color(image):
     mode = calculate_mode(image)
@@ -113,6 +84,38 @@ def _determine_dominate_color(image):
     # return f'<p>{value}</p>'
     return res
 
+
+def calculate_mode(image):
+    if len(image.shape) == 2:  # grayscale
+        vals, counts = np.unique(image, return_counts=True)
+        v = vals[np.argmax(counts)]
+        return v
+
+    num_channels = image.shape[-1]
+    channels = np.split(image.astype(np.uint8), num_channels, axis=-1)
+    merged_colors = np.zeros_like(channels[0], dtype=np.uint32)
+    for ch in channels:  # rgb
+        merged_colors = merged_colors << 8
+        merged_colors += ch
+    vals, counts = np.unique(merged_colors, return_counts=True)
+    v = vals[np.argmax(counts)]
+    result = []
+    for _ in range(num_channels):
+        c = v & 0xFF
+        v = v >> 8
+        result.append(c)
+    return np.array(result[::-1])
+
+
+def determine_dominate_color(image):
+    mode = calculate_mode(image)
+    value = mode
+    if isinstance(value, np.uint8):
+        value_str = f"({value},{value},{value})"
+    else:
+        value_str = ','.join(str(x) for x in value[:3])  # [:3] so the transparent result is visible
+    return f'<p style="background-color:rgb({value_str});">{value}</p>'
+    return value
 
 
 @app.route("/api/determine_dominate_color", methods=['POST'])
